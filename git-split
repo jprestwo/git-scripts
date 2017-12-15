@@ -1,0 +1,75 @@
+#!/bin/bash
+
+
+USAGE="
+git split [<commit-id>] [-s]
+
+Split a git commit into two separate commits, preserving the original
+message and creating a new commit with the changes you selected to be removed
+from the original.
+
+If no <commit-id> is specified HEAD^ will be used. Running this command will
+kick you into an interactive 'git reset -p' prompt where you choose which
+diffs you no longer want in the original commit. Once finished, a git commit
+prompt will appear where you write the NEW commit message. Any changes you
+picked to remove will go in this new commit.
+
+[<commit-id>]	Commit you wish to split into 2 commits. If no commit-id is
+		specified HEAD^ will be used.
+
+-s		Use if you want the new split commit to contain a
+		Signed-off by line"
+
+if echo $* | grep -e "-h" -q
+then
+	echo "$USAGE"
+	echo
+	exit
+fi
+
+if echo $* | grep -e "-s" -q
+then
+	SIGNED="-s"
+fi
+
+if ! git diff --exit-code; then
+        git stash --keep-index
+        stash="true"
+	echo "Stashing changes"
+fi
+
+if [[ $# -ge 1 && "$1" != "-s" ]];
+then
+	# commit-id was provided, save the current branch and checkout that commit
+	BRANCH=$(git rev-parse --abbrev-ref HEAD)
+	git checkout $1
+fi
+
+# save the commit message from HEAD
+MSG=$(git log -1 --pretty=%B)
+
+# reset commit to staging area
+git reset --soft HEAD^
+# remove parts from staging area
+git reset -p
+# (re)commit without chosen changes using original message
+git commit -m "$MSG"
+
+# add everything else and commit
+git add -u
+git commit $SIGNED
+
+# still in detached head state
+if [[ $# -ge 1 && "$1" != "-s" ]];
+then
+	# save new commit-id
+	NEW=$(git rev-parse HEAD)
+	# checkout original branch
+	git checkout $BRANCH
+	# rebase new commits into original branch
+	git rebase $NEW
+fi
+
+if [ "$stash" = "true" ]; then
+	git stash pop
+fi

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+git config --global alias.fixup $(pwd)/git-fixup
+git config --global alias.split $(pwd)/git-split

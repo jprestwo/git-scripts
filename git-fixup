@@ -1,0 +1,41 @@
+#!/bin/bash
+
+USAGE="
+git fixup <commit-id>
+
+Put staged changes into <commit-id>. This will start an interactive rebase,
+but the new 'fixup' commit will already be placed after the specified
+commit-id. Verify that its in the correct place and exit the editor to
+commit the changes into the commit-id. Any unstaged changes will be stashed
+and popped after the rebase (works on a dirty tree).
+"
+
+if echo $* | grep -e "-h" -q
+then
+        echo "$USAGE"
+        exit
+fi
+
+editor=$GIT_EDITOR
+
+if echo $* | grep -e "-a" -q
+then
+        export GIT_EDITOR=true
+fi
+
+if [ $# -lt 1 ];
+then
+	echo "$USAGE"
+	exit
+fi
+
+if git diff --cached --exit-code --quiet;
+then
+	echo "No changes staged, add them with 'git add'"
+	exit
+fi
+
+git commit --fixup=$1
+git rebase -i --autostash --autosquash $1~1
+
+export GIT_EDITOR=$editor
