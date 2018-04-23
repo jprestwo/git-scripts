@@ -32,17 +32,25 @@ then
 	SIGNED="-s"
 fi
 
+# turn input into a commit-id format
+commit_id=$(git rev-parse $1)
+if [ $? -ne 0 ];
+then
+	echo "Could not find commit $1"
+	exit
+fi
+
 if ! git diff --exit-code; then
         git stash --keep-index
         stash="true"
 	echo "Stashing changes"
 fi
 
-if [[ $# -ge 1 && "$1" != "-s" ]];
+if [[ $# -ge 1 && "$commit_id" != "-s" ]];
 then
 	# commit-id was provided, save the current branch and checkout that commit
 	BRANCH=$(git rev-parse --abbrev-ref HEAD)
-	git checkout $1
+	git checkout $commit_id
 fi
 
 # save the commit message from HEAD
@@ -60,7 +68,7 @@ git add -u
 git commit $SIGNED
 
 # still in detached head state
-if [[ $# -ge 1 && "$1" != "-s" ]];
+if [[ $# -ge 1 && "$commit_id" != "-s" ]];
 then
 	# save new commit-id
 	NEW=$(git rev-parse HEAD)
