@@ -35,7 +35,15 @@ then
 	exit
 fi
 
-git commit --fixup=$1
-git rebase -i --autostash --autosquash $1~1
+# turn input into a commit-id format
+commit_id=$(git rev-parse $1)
+if [ $? -ne 0 ];
+then
+	echo "Could not find commit $1"
+	exit
+fi
+
+git commit --fixup=$commit_id
+git rebase -i --autostash --autosquash $commit_id~1
 
 export GIT_EDITOR=$editor
